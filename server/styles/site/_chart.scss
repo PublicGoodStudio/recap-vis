@@ -1,0 +1,29 @@
+body {
+    width: 100vh;
+    height: 100vh;
+    position: relative;
+}
+
+svg {
+    position: absolute;
+    top:50%;
+    left:50%;
+    background-color: #252525;
+    transform: translateY(-50%);
+
+}
+
+.reference-tick {
+    fill:white;
+    text-transform: uppercase;
+    font-size: 10px;
+}
+
+.tick {
+    font-size: 6px;
+    fill:white;
+}
+
+.year-tick {
+    fill:white;
+}

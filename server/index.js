@@ -19,8 +19,6 @@ function Server( config ) {
     self.app        = express();
     self.logger     = new Logger();
 
-    self.individual = 'Nic Schumann';
-
     self.app.set('views', path.join(__dirname, 'templates') );
     self.app.set('view engine', 'twig');
     self.app.set('twig_options', { strict_variables: false });
