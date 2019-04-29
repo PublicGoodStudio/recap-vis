@@ -25,7 +25,7 @@ class CasesByDay {
         this.margins = {
             top: 100,
             left: 100,
-            bottom: 100,
+            bottom: 50,
             right: 50,
             year: 2
         };
