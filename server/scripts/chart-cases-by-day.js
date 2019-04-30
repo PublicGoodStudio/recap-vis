@@ -5,6 +5,7 @@ var groupArray = require('group-array');
 
 import { daysInYear, dayOfYear, monthNames } from './utility-day-of-year.js';
 
+const scaleTuningParameter = 50;
 
 class CasesByDay {
 
@@ -18,7 +19,6 @@ class CasesByDay {
         this.parentElementID = '#visualization';
         this.svgWidth = width;
         this.svgheight = height;
-        this.data = [];
 
         this.tsv = tsv;
 
@@ -48,16 +48,19 @@ class CasesByDay {
     renderYears( data ) {
 
         const grouped = groupArray( data, 'Year' );
+
         const parentWidth = this.svg.node().getBoundingClientRect().width;
         const parentHeight = this.svg.node().getBoundingClientRect().height;
         const yearHeight = ((parentHeight - this.margins.top - this.margins.bottom) / Object.keys( grouped ).length) - this.margins.year;
-        const gWidth = parentWidth - this.margins.left - this.margins.top;
+        const gWidth = parentWidth - this.margins.left - this.margins.right;
+
 
         this.renderMonthTick( this.svg, gWidth );
 
         let i = 0;
 
         for ( var year in grouped ) {
+
 
             const placement = {
                 gTop: this.margins.top + i * (yearHeight + this.margins.year),
@@ -66,6 +69,12 @@ class CasesByDay {
                 gWidth: gWidth
             };
 
+            this.renderYearTick(
+                this.svg,
+                year,
+                placement
+            );
+
             this.renderYear(
                 this.svg,
                 {
@@ -73,12 +82,7 @@ class CasesByDay {
                     data: grouped[ year ]
                 },
                 d3.max( data.map( function( d ) { return parseInt( d['Case Count'] ); }) ),
-                placement
-            );
-
-            this.renderYearTick(
-                this.svg,
-                year,
+                d3.median( data.map( function( d ) { return parseInt( d['Case Count']); }) ),
                 placement
             );
 
@@ -116,44 +120,54 @@ class CasesByDay {
 
     }
 
-    renderYear( parent, data, maxCases, placement ) {
+    renderYear( parent, data, maxCases, medianCases, placement ) {
+
 
         const dayClass = 'day-in-' + data.Year;
 
-        const gWidth = placement.gWidth;
-        const gHeight = placement.gHeight;
+        const dayWidth =  placement.gWidth / daysInYear / 2;
 
-        const dayWidth = 3 * gWidth / daysInYear / 4;
+        const hScaleMax = medianCases + scaleTuningParameter;
 
-        const x = d3.scaleLinear().domain([0, daysInYear]).range([0, placement.gWidth]);
-        const h = d3.scaleLog().domain([1, maxCases]).range([1, placement.gHeight]);
-        const o = d3.scaleLog().domain([1, maxCases]).range([0.4,1.0])
+        console.log( medianCases );
+        console.log( hScaleMax );
+
+        const x = d3.scaleLinear().domain([1, daysInYear]).range([0, placement.gWidth]);
+        let h = d3.scaleLinear().domain([1, hScaleMax]).range([1, placement.gHeight]);//.base( medianCases );
+        const o = d3.scaleLinear().domain([1, hScaleMax]).range([0.0,1.0]);
+
 
         const g = parent.append('g')
             .attr('id', 'year-' + data.Year )
-            .attr('width', gWidth )
-            .attr('height', gHeight)
+            .attr('width', placement.gWidth )
+            .attr('height', placement.gHeight)
             .attr('transform', 'translate(' + [placement.gLeft,placement.gTop] + ')');
 
-        this.renderDayAsCenteredRect( data.data, g, x, h, o, dayWidth, placement.gHeight, dayClass );
+        this.renderDayAsCenteredRect( data.data, g, x, h, o, hScaleMax, dayWidth, placement.gHeight, dayClass );
 
     }
 
 
-    renderDayAsTopAlignedRect( data, g, x, h, o, gw, gh, cls ) {
-        return this.renderDayAsAlignedRect( data, g, x, h, o, gw, gh, cls, 0 );
+    renderDayAsTopAlignedRect( data, g, x, h, o, hScaleMax, gw, gh, cls ) {
+        return this.renderDayAsAlignedRect( data, g, x, h, o, hScaleMax, gw, gh, cls, 0 );
+    }
+
+    renderDayAsBottomAlignedRect( data, g, x, h, o, hScaleMax, gw, gh, cls ) {
+        const yPlacement = function( d ) { return (gh - h( Math.min( parseInt( d['Case Count'] ), hScaleMax) )); };
+
+        return this.renderDayAsAlignedRect( data, g, x, h, o, hScaleMax, gw, gh, cls, yPlacement );
     }
 
 
-    renderDayAsCenteredRect( data, g, x, h, o, gw, gh, cls ) {
+    renderDayAsCenteredRect( data, g, x, h, o, hScaleMax, gw, gh, cls ) {
 
-        const yMap = function( d ) { return (gh - h( parseInt( d['Case Count'] ))) / 2; };
-        return this.renderDayAsAlignedRect( data, g, x, h, o, gw, gh, cls, yMap );
+        const yPlacement = function( d ) { return (gh - h( Math.min( parseInt( d['Case Count'] ), hScaleMax) )) / 2; };
+        return this.renderDayAsAlignedRect( data, g, x, h, o, hScaleMax, gw, gh, cls, yPlacement );
 
     }
 
 
-    renderDayAsAlignedRect( data, g, x, h, o, gw, gh, cls, yPlacement ) {
+    renderDayAsAlignedRect( data, g, x, h, o, hScaleMax, gw, gh, cls, yPlacement ) {
         return g
             .selectAll( '.' + cls )
             .data( data )
@@ -164,8 +178,8 @@ class CasesByDay {
                 .attr('x', function( d ) { return x( dayOfYear( parseInt( d.Day ), parseInt( d.Month ) ) ) + gw / 4; } )
                 .attr('y', yPlacement )
                 .attr('width', gw )
-                .attr('height', function( d ) { return h( parseInt( d['Case Count'] )); } )
-                .attr('fill', function( d ) { return 'rgba(255,255,255,' + o( parseInt( d['Case Count'] ) ) + ')'; });
+                .attr('height', function( d ) { return h( Math.min( parseInt( d['Case Count'] ), hScaleMax ) ); } )
+                .attr('opacity', function( d ) { return o( parseInt( d['Case Count'] ) ); });
     }
 
 }
