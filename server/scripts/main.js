@@ -5,7 +5,7 @@ import { CasesByDay } from './chart-cases-by-day.js';
 
 livereload();
 
-const tsvFilename = 'cases_by_decision_date_1600_1900.tsv';
+const tsvFilename = 'cases_by_decision_date_1900_1950.tsv';
 
 // 612 x 796 = 8.5 x ll
 // 796 x 1224 = 11 x l7

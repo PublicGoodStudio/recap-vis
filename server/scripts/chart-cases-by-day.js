@@ -5,7 +5,7 @@ var groupArray = require('group-array');
 
 import { daysInYear, dayOfYear, monthNames } from './utility-day-of-year.js';
 
-const scaleTuningParameter = 50;
+const p = 0.8;
 
 class CasesByDay {
 
@@ -14,7 +14,7 @@ class CasesByDay {
      * setup an SVG element ready for subsequent drawing.
      *
      */
-    constructor( tsv, width, height) {
+    constructor(tsv, width, height) {
 
         this.parentElementID = '#visualization';
         this.svgWidth = width;
@@ -45,7 +45,22 @@ class CasesByDay {
 
     }
 
+
+    getThirdQuartile( data ) {
+        data = data.map( ( d ) => { return parseFloat( d['Case Count'] ); });
+        data.sort( function( a,b ) { return a - b; } );
+
+        return d3.quantile( data, p );
+    }
+
+
     renderYears( data ) {
+
+        const thirdQuartile = this.getThirdQuartile( data );
+        const max = d3.max( data.map( function( d ) { return parseInt( d['Case Count'] ); }) );
+        const median = d3.median( data.map( function( d ) { return parseInt( d['Case Count']); }) );
+
+        console.log( median, thirdQuartile, max );
 
         const grouped = groupArray( data, 'Year' );
 
@@ -60,7 +75,6 @@ class CasesByDay {
         let i = 0;
 
         for ( var year in grouped ) {
-
 
             const placement = {
                 gTop: this.margins.top + i * (yearHeight + this.margins.year),
@@ -81,8 +95,8 @@ class CasesByDay {
                     Year: year,
                     data: grouped[ year ]
                 },
-                d3.max( data.map( function( d ) { return parseInt( d['Case Count'] ); }) ),
-                d3.median( data.map( function( d ) { return parseInt( d['Case Count']); }) ),
+                max,
+                thirdQuartile,
                 placement
             );
 
@@ -120,21 +134,16 @@ class CasesByDay {
 
     }
 
-    renderYear( parent, data, maxCases, medianCases, placement ) {
+    renderYear( parent, data, maxCases, targetQuantile, placement ) {
 
 
         const dayClass = 'day-in-' + data.Year;
 
         const dayWidth =  placement.gWidth / daysInYear / 2;
 
-        const hScaleMax = medianCases + scaleTuningParameter;
-
-        console.log( medianCases );
-        console.log( hScaleMax );
-
         const x = d3.scaleLinear().domain([1, daysInYear]).range([0, placement.gWidth]);
-        let h = d3.scaleLinear().domain([1, hScaleMax]).range([1, placement.gHeight]);//.base( medianCases );
-        const o = d3.scaleLinear().domain([1, hScaleMax]).range([0.0,1.0]);
+        let h = d3.scaleLinear().domain([1, targetQuantile]).range([1, placement.gHeight]);//.base( medianCases );
+        const o = d3.scaleLinear().domain([1, targetQuantile]).range([0.0,1.0]);
 
 
         const g = parent.append('g')
@@ -143,7 +152,7 @@ class CasesByDay {
             .attr('height', placement.gHeight)
             .attr('transform', 'translate(' + [placement.gLeft,placement.gTop] + ')');
 
-        this.renderDayAsCenteredRect( data.data, g, x, h, o, hScaleMax, dayWidth, placement.gHeight, dayClass );
+        this.renderDayAsCenteredRect( data.data, g, x, h, o, targetQuantile, dayWidth, placement.gHeight, dayClass );
 
     }
 
