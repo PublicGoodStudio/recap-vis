@@ -142,7 +142,7 @@ class CasesByDay {
         const dayWidth =  placement.gWidth / daysInYear / 2;
 
         const x = d3.scaleLinear().domain([1, daysInYear]).range([0, placement.gWidth]);
-        let h = d3.scaleLinear().domain([1, targetQuantile]).range([1, placement.gHeight]);//.base( medianCases );
+        let h = d3.scaleLinear().domain([1, targetQuantile]).range([1, placement.gHeight]);
         const o = d3.scaleLinear().domain([1, targetQuantile]).range([0.0,1.0]);
 
 
