@@ -1,6 +1,6 @@
 'use strict';
 
-var d3 = Object.assign( require('d3'), require('d3-fetch') );
+var d3 = Object.assign( require('d3'), require('d3-fetch'), require('d3-scale-chromatic') );
 var groupArray = require('group-array');
 
 import { daysInYear, dayOfYear, monthNames } from './utility-day-of-year.js';
@@ -144,7 +144,7 @@ class CasesByDay {
         const x = d3.scaleLinear().domain([1, daysInYear]).range([0, placement.gWidth]);
         let h = d3.scaleLinear().domain([1, targetQuantile]).range([1, placement.gHeight]);
         const o = d3.scaleLinear().domain([1, targetQuantile]).range([0.0,1.0]);
-
+        const c = ( t ) => { return d3.interpolateSpectral( (1 - d3.scaleLinear().domain([1, targetQuantile]).range([0,1])(t)) / 2 ); };
 
         const g = parent.append('g')
             .attr('id', 'year-' + data.Year )
@@ -152,7 +152,7 @@ class CasesByDay {
             .attr('height', placement.gHeight)
             .attr('transform', 'translate(' + [placement.gLeft,placement.gTop] + ')');
 
-        this.renderDayAsCenteredRect( data.data, g, x, h, o, targetQuantile, dayWidth, placement.gHeight, dayClass );
+        this.renderDayAsCenteredRect( data.data, g, x, h, c, targetQuantile, dayWidth, placement.gHeight, dayClass );
 
     }
 
@@ -188,7 +188,7 @@ class CasesByDay {
                 .attr('y', yPlacement )
                 .attr('width', gw )
                 .attr('height', function( d ) { return h( Math.min( parseInt( d['Case Count'] ), hScaleMax ) ); } )
-                .attr('opacity', function( d ) { return o( parseInt( d['Case Count'] ) ); });
+                .attr('fill', function( d ) { return o( parseInt( d['Case Count'] ) ); });
     }
 
 }
