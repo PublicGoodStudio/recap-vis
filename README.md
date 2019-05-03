@@ -25,7 +25,9 @@ To use this tool, run through the following steps.
 
 5. Point your browser to `http://localhost:8080`. You should be able to see the rendered SVG at that url on your machine. If you ran `npm run watch` in step 4, you should be able to adjust styles, and see the visualization hot-updated.
 
-When the visualization is to your liking, use [this tool](https://nytimes.github.io/svg-crowbar/) from the New York Times to extract the SVG for print.
+When the visualization is to your liking, you might try [this tool](https://nytimes.github.io/svg-crowbar/) from the New York Times to extract the SVG for print.
+
+If the tool doesn't seem to work (We've experienced a few issues with this tool in the past), the svg styling is self-contained enough that it should be possible to download the SVG manually. Open the inspector, right click on the `svg` element containing your visualization, and click "Copy Element". Then open your favorite text editor and paste the element into it. Finally, just save the new file as a `.svg`. From there, you should be able to open the file in any vector drawing application.
 
 
 ## Attribution
