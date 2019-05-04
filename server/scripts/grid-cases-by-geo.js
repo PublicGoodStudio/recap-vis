@@ -80,34 +80,42 @@ class CasesByGeo {
 
       var row_position = 0;
       var column_position = 0;
+      var case_count = 0;
       for (var range in ranges) {
         //console.log('getting ranges for ', ranges[range].start_year, ranges[range].end_year )
         var ranged_data = this.get_counts( data, ranges[range].start_year, ranges[range].end_year );
         //console.log(ranged_data);
+        case_count = case_count + ranged_data.case_count;
+        this.svg
+            .append('text')
+            .classed('year-delta', true)
+            .attr('x', 100 + (300 * column_position) )
+            .attr('y', 100 + (300 * row_position ))
+            .text( ranges[range].start_year + ' to ' + ranges[range].end_year);
 
-            this.svg
-                .append('text')
-                .classed('year-delta', true)
-                .attr('x', 100 + (300 * column_position) )
-                .attr('y', 100 + (300 * row_position ))
-                .text( 'increase of ' + 12 + 'cases');
+        this.svg
+            .append('text')
+            .classed('year-delta', true)
+            .attr('x', 100 + (300 * column_position) )
+            .attr('y', 100 + (300 * row_position ) +20)
+            .text( 'increase of ' + ranged_data.case_count + ' cases');
 
-            this.svg
-                .append('text')
-                .classed('year-delta', true)
-                .attr('x', 100 + (300 * column_position) )
-                .attr('y', 100 + (300 * row_position ) + 20)
-                .text( ranged_data.case_count + ' cases total');
+        this.svg
+            .append('text')
+            .classed('year-delta', true)
+            .attr('x', 100 + (300 * column_position) )
+            .attr('y', 100 + (300 * row_position ) + 40)
+            .text( case_count + ' cases in total');
 
 
-            column_position = column_position + 1;
+        column_position = column_position + 1;
 
-            if (column_position === 6) {
-              column_position = 0;
-              row_position = row_position + 1;
-            }
+        if (column_position === 6) {
+          column_position = 0;
+          row_position = row_position + 1;
+        }
 
-          }
+      }
 
 
 
