@@ -10,6 +10,7 @@ const express = require('express');
 const Logger = require('./logger.js');
 
 const homeUIRoute = require('./ui-home.js');
+const geoRoute = require('./geo-home.js');
 
 function Server( config ) {
     if ( !(this instanceof Server) ) { return new Server( config ); }
@@ -27,6 +28,9 @@ function Server( config ) {
 
     // NOTE: UI Routes here.
     self.app.get('/', homeUIRoute.bind( self ) );
+    self.app.get('/geo', geoRoute.bind( self ) );
+
+
 
 
 }

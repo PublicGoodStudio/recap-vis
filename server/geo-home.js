@@ -3,7 +3,7 @@
 /**
  * @route /
  *
- * A request for the whole application.
+ * A request for the geo vis.
  *
  * ROUTE CONTRACT
  * ==============
@@ -14,9 +14,9 @@ var route = function( req, res ) {
 
     var self = this;
 
-    self.logger.log('info', 'server', `requested home.` );
+    self.logger.log('info', 'server' );
 
-    res.render( 'index', {});
+    res.render( 'geo', {});
 
 };
 

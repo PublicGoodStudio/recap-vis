@@ -8,7 +8,7 @@ svg {
     position: absolute;
     top:50%;
     left:50%;
-    background-color: #04043c; 
+    background-color: #04043c;
     transform: translateY(-50%);
 
 }
@@ -30,4 +30,11 @@ svg {
 
 .day {
     //fill: white;
+}
+
+.year-delta {
+  position: absolute;
+  fill:white;
+  font-size: 16px;
+  text-anchor: middle;
 }
