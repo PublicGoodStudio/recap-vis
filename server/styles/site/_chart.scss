@@ -38,3 +38,14 @@ svg {
   font-size: 16px;
   text-anchor: middle;
 }
+
+.states {
+  fill: none;
+  stroke: #333;
+  stroke-linejoin: round;
+}
+
+.states-choropleth {
+  fill: red;
+
+}

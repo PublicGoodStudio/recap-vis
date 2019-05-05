@@ -1,7 +1,11 @@
 'use strict';
 
-var d3 = Object.assign( require('d3'), require('d3-fetch'), require('d3-scale-chromatic') );
+var d3 = Object.assign( require('d3'), require('d3-fetch'), require('d3-scale-chromatic'), require('d3-geo') );
 var moment = require('moment');
+
+var topojson = require('topojson');
+var projection;
+var path;
 
 
 //import { daysInYear, dayOfYear, monthNames } from './utility-day-of-year.js';
@@ -35,6 +39,11 @@ class CasesByGeo {
                 .attr('width', width + 'px')
                 .attr('height', height + 'px');
 
+
+
+        path   = d3.geoPath()
+                   .projection(this.scale(.15));
+
     }
 
     generateVisualization() {
@@ -43,6 +52,9 @@ class CasesByGeo {
 
       d3  .json('/static/data/' + this.jsonFilePath )
           .then( this.renderTextDesc.bind(this) );
+
+      d3  .json( "https://d3js.org/us-10m.v1.json" )
+          .then( this.renderGeo.bind(this) );
 
     }
 
@@ -84,27 +96,27 @@ class CasesByGeo {
       for (var range in ranges) {
         //console.log('getting ranges for ', ranges[range].start_year, ranges[range].end_year )
         var ranged_data = this.get_counts( data, ranges[range].start_year, ranges[range].end_year );
-        //console.log(ranged_data);
+
         case_count = case_count + ranged_data.case_count;
         this.svg
             .append('text')
             .classed('year-delta', true)
-            .attr('x', 100 + (300 * column_position) )
-            .attr('y', 100 + (300 * row_position ))
+            .attr('x', 150 + (300 * column_position) )
+            .attr('y', 250 + (300 * row_position ))
             .text( ranges[range].start_year + ' to ' + ranges[range].end_year);
 
         this.svg
             .append('text')
             .classed('year-delta', true)
-            .attr('x', 100 + (300 * column_position) )
-            .attr('y', 100 + (300 * row_position ) +20)
+            .attr('x', 150 + (300 * column_position) )
+            .attr('y', 250 + (300 * row_position ) +20)
             .text( 'increase of ' + ranged_data.case_count + ' cases');
 
         this.svg
             .append('text')
             .classed('year-delta', true)
-            .attr('x', 100 + (300 * column_position) )
-            .attr('y', 100 + (300 * row_position ) + 40)
+            .attr('x', 150 + (300 * column_position) )
+            .attr('y', 250 + (300 * row_position ) + 40)
             .text( case_count + ' cases in total');
 
 
@@ -116,10 +128,6 @@ class CasesByGeo {
         }
 
       }
-
-
-
-
 
     }
 
@@ -152,6 +160,59 @@ class CasesByGeo {
         return {case_count: case_count, bundle: bundle};
     }
 
+    scale (scaleFactor) {
+        return d3.geoTransform({
+            point: function(x, y) {
+                this.stream.point(x * scaleFactor, y  * scaleFactor);
+            }
+        });
+    }
+
+    renderGeo(data) {
+
+
+      var row_position = 0;
+      var column_position = 0;
+      var x = 0;
+      var y = 0;
+
+      for (var i = 0; i < 38; i++) { // match our decade descriptions
+
+        x = 100 + (300 * column_position);
+        y = 100 + (300 * row_position );
+
+        this.svg.append("g")
+            .attr("class", "states-choropleth")
+          .selectAll("path")
+          .data(topojson.feature(data, data.objects.states).features)
+          .enter()
+          .append("path")
+          .attr('transform', 'translate(' + x + ',' + y + ')')
+           .attr("d", path);
+
+
+        this.svg.append("path")
+            .attr("class", "states")
+            .attr('transform', 'translate(' + 100 + (300 * column_position) + ',' + 100 + (300 * row_position )  + ')')
+            .attr('transform', 'translate(' + x + ',' + y + ')')
+            .attr("d", path(topojson.mesh(data, data.objects.states, function(a, b) { return a !== b; })));
+
+
+
+
+        column_position = column_position + 1;
+
+        if (column_position === 6) {
+          column_position = 0;
+          row_position = row_position + 1;
+        }
+
+
+
+      }
+
+
+     }
 }
 
 export { CasesByGeo };
