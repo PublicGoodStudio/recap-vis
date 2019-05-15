@@ -83,6 +83,7 @@ class CasesByGeo {
       var row_position = 0;
       var column_position = 0;
       var case_count = 0;
+
       for (let range in ranges) {
         let ranged_data = this.get_counts( data, ranges[range].start_year, ranges[range].end_year );
 
@@ -145,12 +146,11 @@ class CasesByGeo {
           }
 
         }
-        console.log(case_count);
         return {case_count: case_count, bundle: bundle};
     }
 
     getMaxCaseCount(data) {
-
+      this.jj = data;
       var bundle = {};
       for ( let d in data ) {
 
@@ -204,24 +204,71 @@ class CasesByGeo {
       }
 
 
-      var getCountsFromId = (stateId) => {
-        d3  .json('/static/data/' + this.jsonFilePath )
-            .then(
-
-            function(data) {
-              console.log(stateId);
-
-            }
 
 
-          )
+
+      var getCountsFromId =  (stateId) => {
+        // a numeric, two digit stateid from toppjson enters
+
+        const jurisdictionAssociations = { "01":"ala", "02":"alaska",
+                  "04":"ariz", "05":"ark", "06":"cal",
+                  "08":"colo", "09":"conn", "10":"del", "12":"fla", "13":"ga",
+                  "15":"haw", "16":"idaho", '17':"ill", "18":"ind", "19":"iowa",
+                  "20":"kan", "21":"ky", "22":"la", "23":"me", "24":"md",
+                  "25":"mass", "26":"mich", '27':"minn", "28":"miss", "29":"mo",
+                  "30":"montchr", "31":"neb", "32":"nev", "33":"nh", "34":"nj",
+                  "35":"nm", "36":"ny", "37":"nc", "38":"nd", "39":"ohio",
+                  "40":"okla", "41":"or", "42":"pa", "44":"ri", "45":"sc", "46":"sd",
+                  "47":"tenn", "48":"tex", "49":"utah", "50":"vt", "51":"va",
+                  "53":"wash", "54":"w-va", "55":"wis", "56":"wyo"};
+
+
+
+
+
+                      var bundle = {};
+                      for ( let d in this.jj ) {
+
+                          for (let jurisdiction in this.jj[d]) {
+
+                            if (jurisdiction in bundle) {
+                                bundle[jurisdiction] = bundle[jurisdiction] + this.jj[d][jurisdiction];
+                            } else {
+                              bundle[jurisdiction] = this.jj[d][jurisdiction];
+                            }
+
+                          }
+
+
+                        }
+
+                    //console.log(stateId + ' ' + jurisdictionAssociations[stateId] + ' ' + bundle[jurisdictionAssociations[stateId]]);
+
+                    let count = bundle[jurisdictionAssociations[stateId]];
+
+
+                    if ( typeof count === 'undefined' ) {
+                      count = 1;
+                    }
+
+                    console.log('count is ' + count);
+
+                    return count;
+
+
+
       }
+
+
+
+
+
 
       let path   = d3.geoPath()
                  .projection(scale(.15));
 
       let color = d3.scaleLinear()
-         .domain([1, 101])
+         .domain([1, 140000])
          .range(["white", "steelblue"]);
 
       let row_position = 0;
@@ -241,16 +288,22 @@ class CasesByGeo {
             .enter()
             .append("path")
             .attr("fill", function(d) {
-                getCountsFromId(d.id);
-            // make function that accepts d.id, maps it to cap state abrev.
-            // and then returns the count for that state
-            // we then pass that value to our color function
 
-            return color(getRandomInt(1,100));
+                // kludge: ignoring dc in the topojson since
+                // we don't draw it in this vis
+                if (d.id == "11") {
+                  return
+                }
 
-          })
-          .attr('transform', 'translate(' + x + ',' + y + ')')
-           .attr("d", path);
+                //console.log(d.id + ' ' + getCountsFromId(d.id));
+                return color(getCountsFromId(d.id))
+
+
+
+
+              })
+            .attr('transform', 'translate(' + x + ',' + y + ')')
+            .attr("d", path);
 
 
         this.svg.append("path")
