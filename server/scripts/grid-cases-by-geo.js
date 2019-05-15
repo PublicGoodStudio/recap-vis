@@ -4,6 +4,29 @@ var d3 = Object.assign( require('d3'), require('d3-fetch'), require('d3-scale-ch
 var moment = require('moment');
 var topojson = require('topojson');
 
+const ranges = [
+  {start_year: 1657, end_year: 1657}, {start_year: 1658, end_year: 1659},
+  {start_year: 1660, end_year: 1669}, {start_year: 1670, end_year: 1679},
+  {start_year: 1680, end_year: 1689}, {start_year: 1690, end_year: 1699},
+  {start_year: 1700, end_year: 1709}, {start_year: 1710, end_year: 1719},
+  {start_year: 1720, end_year: 1729}, {start_year: 1730, end_year: 1739},
+  {start_year: 1740, end_year: 1749},
+  {start_year: 1750, end_year: 1759}, {start_year: 1760, end_year: 1769},
+  {start_year: 1770, end_year: 1779}, {start_year: 1780, end_year: 1789},
+  {start_year: 1790, end_year: 1799}, {start_year: 1800, end_year: 1809},
+  {start_year: 1810, end_year: 1819}, {start_year: 1820, end_year: 1829},
+  {start_year: 1830, end_year: 1839}, {start_year: 1840, end_year: 1849},
+  {start_year: 1850, end_year: 1859}, {start_year: 1860, end_year: 1869},
+  {start_year: 1870, end_year: 1879}, {start_year: 1880, end_year: 1889},
+  {start_year: 1890, end_year: 1899}, {start_year: 1900, end_year: 1909},
+  {start_year: 1910, end_year: 1919}, {start_year: 1920, end_year: 1929},
+  {start_year: 1930, end_year: 1939}, {start_year: 1940, end_year: 1949},
+  {start_year: 1950, end_year: 1959}, {start_year: 1960, end_year: 1969},
+  {start_year: 1970, end_year: 1979}, {start_year: 1980, end_year: 1989},
+  {start_year: 1990, end_year: 1999}, {start_year: 2000, end_year: 2009},
+  {start_year: 2010, end_year: 2019}
+];
+
 class CasesByGeo {
 
     /**
@@ -57,28 +80,6 @@ class CasesByGeo {
       // n cases total
 
 
-      const ranges = [
-        {start_year: 1657, end_year: 1657}, {start_year: 1658, end_year: 1659},
-        {start_year: 1660, end_year: 1669}, {start_year: 1670, end_year: 1679},
-        {start_year: 1680, end_year: 1689}, {start_year: 1690, end_year: 1699},
-        {start_year: 1700, end_year: 1709}, {start_year: 1710, end_year: 1719},
-        {start_year: 1720, end_year: 1729}, {start_year: 1730, end_year: 1739},
-        {start_year: 1740, end_year: 1749},
-        {start_year: 1750, end_year: 1759}, {start_year: 1760, end_year: 1769},
-        {start_year: 1770, end_year: 1779}, {start_year: 1780, end_year: 1789},
-        {start_year: 1790, end_year: 1799}, {start_year: 1800, end_year: 1809},
-        {start_year: 1810, end_year: 1819}, {start_year: 1820, end_year: 1829},
-        {start_year: 1830, end_year: 1839}, {start_year: 1840, end_year: 1849},
-        {start_year: 1850, end_year: 1859}, {start_year: 1860, end_year: 1869},
-        {start_year: 1870, end_year: 1879}, {start_year: 1880, end_year: 1889},
-        {start_year: 1890, end_year: 1899}, {start_year: 1900, end_year: 1909},
-        {start_year: 1910, end_year: 1919}, {start_year: 1920, end_year: 1929},
-        {start_year: 1930, end_year: 1939}, {start_year: 1940, end_year: 1949},
-        {start_year: 1950, end_year: 1959}, {start_year: 1960, end_year: 1969},
-        {start_year: 1970, end_year: 1979}, {start_year: 1980, end_year: 1989},
-        {start_year: 1990, end_year: 1999}, {start_year: 2000, end_year: 2009},
-        {start_year: 2010, end_year: 2019}
-      ];
 
       var row_position = 0;
       var column_position = 0;
@@ -169,7 +170,7 @@ class CasesByGeo {
 
 
         this.maxCaseCount = d3.max(d3.values(bundle));
-        //console.log(this.maxCaseCount)
+
 
 
       }
@@ -207,7 +208,7 @@ class CasesByGeo {
 
 
 
-      var getCountsFromId =  (stateId) => {
+      var getCountsFromId =  (stateId, startYear, endYear) => {
         // a numeric, two digit stateid from toppjson enters
 
         const jurisdictionAssociations = { "01":"ala", "02":"alaska",
@@ -229,6 +230,10 @@ class CasesByGeo {
                       var bundle = {};
                       for ( let d in this.jj ) {
 
+                        let caseYear = parseInt(d, 10);
+
+                        if (caseYear >= startYear && caseYear <= endYear) {
+
                           for (let jurisdiction in this.jj[d]) {
 
                             if (jurisdiction in bundle) {
@@ -241,8 +246,9 @@ class CasesByGeo {
 
 
                         }
+                      }
 
-                    //console.log(stateId + ' ' + jurisdictionAssociations[stateId] + ' ' + bundle[jurisdictionAssociations[stateId]]);
+
 
                     let count = bundle[jurisdictionAssociations[stateId]];
 
@@ -251,7 +257,7 @@ class CasesByGeo {
                       count = 1;
                     }
 
-                    console.log('count is ' + count);
+
 
                     return count;
 
@@ -268,7 +274,7 @@ class CasesByGeo {
                  .projection(scale(.15));
 
       let color = d3.scaleLinear()
-         .domain([1, 140000])
+         .domain([1, 14000])
          .range(["white", "steelblue"]);
 
       let row_position = 0;
@@ -276,7 +282,9 @@ class CasesByGeo {
       let x = 0;
       let y = 0;
 
-      for (let i = 0; i < 38; i++) { // match our decade descriptions
+
+
+      for (let range in ranges) { // match our decade descriptions
 
         x = 100 + (300 * column_position);
         y = 100 + (300 * row_position );
@@ -295,8 +303,9 @@ class CasesByGeo {
                   return
                 }
 
-                //console.log(d.id + ' ' + getCountsFromId(d.id));
-                return color(getCountsFromId(d.id))
+
+                console.log(ranges[range].start_year + ' ' + getCountsFromId(d.id, ranges[range].start_year, ranges[range].end_year));
+                return color(getCountsFromId(d.id, ranges[range].start_year, ranges[range].end_year))
 
 
 
