@@ -1,40 +1,19 @@
 'use strict';
 
 var d3 = Object.assign( require('d3'), require('d3-fetch'), require('d3-scale-chromatic'), require('d3-geo') );
-var moment = require('moment');
 var topojson = require('topojson');
+require("babel-polyfill");
 
-const ranges = [
-  {start_year: 1657, end_year: 1657}, {start_year: 1658, end_year: 1659},
-  {start_year: 1660, end_year: 1669}, {start_year: 1670, end_year: 1679},
-  {start_year: 1680, end_year: 1689}, {start_year: 1690, end_year: 1699},
-  {start_year: 1700, end_year: 1709}, {start_year: 1710, end_year: 1719},
-  {start_year: 1720, end_year: 1729}, {start_year: 1730, end_year: 1739},
-  {start_year: 1740, end_year: 1749},
-  {start_year: 1750, end_year: 1759}, {start_year: 1760, end_year: 1769},
-  {start_year: 1770, end_year: 1779}, {start_year: 1780, end_year: 1789},
-  {start_year: 1790, end_year: 1799}, {start_year: 1800, end_year: 1809},
-  {start_year: 1810, end_year: 1819}, {start_year: 1820, end_year: 1829},
-  {start_year: 1830, end_year: 1839}, {start_year: 1840, end_year: 1849},
-  {start_year: 1850, end_year: 1859}, {start_year: 1860, end_year: 1869},
-  {start_year: 1870, end_year: 1879}, {start_year: 1880, end_year: 1889},
-  {start_year: 1890, end_year: 1899}, {start_year: 1900, end_year: 1909},
-  {start_year: 1910, end_year: 1919}, {start_year: 1920, end_year: 1929},
-  {start_year: 1930, end_year: 1939}, {start_year: 1940, end_year: 1949},
-  {start_year: 1950, end_year: 1959}, {start_year: 1960, end_year: 1969},
-  {start_year: 1970, end_year: 1979}, {start_year: 1980, end_year: 1989},
-  {start_year: 1990, end_year: 1999}, {start_year: 2000, end_year: 2009},
-  {start_year: 2010, end_year: 2019}
-];
+import { ranges, jurisdictionAssociations } from './utility-geo.js';
+
 
 class CasesByGeo {
 
     /**
      * Given an id of a parent html element to attach to,
      * setup an SVG element ready for subsequent drawing.
-     *
      */
-    constructor(jsonFilePath, width, height) {
+    constructor( jsonFilePath, width, height ) {
 
         this.parentElementID = '#geo-vis';
         this.svgWidth = width;
@@ -56,90 +35,96 @@ class CasesByGeo {
                 .attr('width', width + 'px')
                 .attr('height', height + 'px');
 
+    }
+
+    async generateVisualization() {
+
+        // Load our data and store in this objects
+        await this.loadData();
+
+        this.renderTextDesc();
+        this.getMaxCaseCount();
+        this.renderGeo();
 
     }
 
-    generateVisualization() {
+    async loadData() {
 
-      d3  .json('/static/data/' + this.jsonFilePath )
-          .then( this.getMaxCaseCount.bind(this) )
-          .then( this.renderTextDesc.bind(this) );
+        await d3.json( 'https://d3js.org/us-10m.v1.json' ).then(
+          ( data ) => { this.stateGeoData = data; }
+        )
 
-      d3  .json( "https://d3js.org/us-10m.v1.json" )
-          .then( this.renderGeo.bind(this) );
+        await d3.json( '/static/data/' + this.jsonFilePath ).then(
+          ( data ) => { this.crunchedCapData = data; }
+        )
 
     }
 
-    renderTextDesc( data ) {
+    renderTextDesc() {
 
-      // I need to iterate through a list of year ranges
-      // and for each range, I draw a block
-      // that block will contain two lines
+        let rowPosition = 0;
+        let columnPosition = 0;
+        let caseCount = 0;
 
-      // increase of n cases
-      // n cases total
+        for ( let range in ranges ) {
 
+            let ranged_data = this.getCounts( ranges[range].startYear, ranges[range].endYear );
+            caseCount = caseCount + ranged_data.caseCount;
 
+            this.svg
+                .append('text')
+                .classed('year-delta', true)
+                .attr('x', 150 + (300 * columnPosition) )
+                .attr('y', 250 + (300 * rowPosition ))
+                .text( ranges[range].startYear + ' to ' + ranges[range].endYear);
 
-      var row_position = 0;
-      var column_position = 0;
-      var case_count = 0;
+            this.svg
+                .append('text')
+                .classed('year-delta', true)
+                .attr('x', 150 + (300 * columnPosition) )
+                .attr('y', 250 + (300 * rowPosition ) +20)
+                .text( 'increase of ' + ranged_data.caseCount + ' cases');
 
-      for (let range in ranges) {
-        let ranged_data = this.get_counts( data, ranges[range].start_year, ranges[range].end_year );
+            this.svg
+                .append('text')
+                .classed('year-delta', true)
+                .attr('x', 150 + (300 * columnPosition) )
+                .attr('y', 250 + (300 * rowPosition ) + 40)
+                .text( caseCount + ' cases in total');
 
-        case_count = case_count + ranged_data.case_count;
-        this.svg
-            .append('text')
-            .classed('year-delta', true)
-            .attr('x', 150 + (300 * column_position) )
-            .attr('y', 250 + (300 * row_position ))
-            .text( ranges[range].start_year + ' to ' + ranges[range].end_year);
+            columnPosition = columnPosition + 1;
 
-        this.svg
-            .append('text')
-            .classed('year-delta', true)
-            .attr('x', 150 + (300 * column_position) )
-            .attr('y', 250 + (300 * row_position ) +20)
-            .text( 'increase of ' + ranged_data.case_count + ' cases');
+            if ( columnPosition === 6 ) {
 
-        this.svg
-            .append('text')
-            .classed('year-delta', true)
-            .attr('x', 150 + (300 * column_position) )
-            .attr('y', 250 + (300 * row_position ) + 40)
-            .text( case_count + ' cases in total');
+              columnPosition = 0;
+              rowPosition = rowPosition + 1;
 
+            }
 
-        column_position = column_position + 1;
-
-        if (column_position === 6) {
-          column_position = 0;
-          row_position = row_position + 1;
         }
 
-      }
-
     }
 
-    get_counts( data, start_year, end_year ) {
+    getCounts(startYear, endYear ) {
 
         var bundle = {};
-        var case_count = 0;
-        for ( let d in data ) {
+        var caseCount = 0;
+
+        for ( let d in this.crunchedCapData ) {
 
           var case_year = parseInt(d, 10);
 
-          if (case_year >= start_year && case_year <= end_year) {
+          if (case_year >= startYear && case_year <= endYear) {
 
-            for (let jurisdiction in data[d]) {
+            for (let jurisdiction in this.crunchedCapData[d]) {
 
               if (jurisdiction in bundle) {
-                  bundle[jurisdiction] = bundle[jurisdiction] + data[d][jurisdiction];
+                  bundle[jurisdiction] = bundle[jurisdiction] + this.crunchedCapData[d][jurisdiction];
               } else {
-                bundle[jurisdiction] = 1;
+                bundle[jurisdiction] = this.crunchedCapData[d][jurisdiction];
               }
-              case_count = case_count + bundle[jurisdiction];
+
+              caseCount = caseCount + bundle[jurisdiction];
 
             }
 
@@ -147,192 +132,137 @@ class CasesByGeo {
           }
 
         }
-        return {case_count: case_count, bundle: bundle};
+
+        return {caseCount: caseCount, bundle: bundle};
     }
 
-    getMaxCaseCount(data) {
-      this.jj = data;
-      var bundle = {};
-      for ( let d in data ) {
 
-          for (let jurisdiction in data[d]) {
 
-            if (jurisdiction in bundle) {
-                bundle[jurisdiction] = bundle[jurisdiction] + data[d][jurisdiction];
-            } else {
-              bundle[jurisdiction] = data[d][jurisdiction];
-            }
+    // Find the largest case count (per jurisdiction) over
+    // all year ranes. We use this as our upper domain
+    // for our color shading
+    getMaxCaseCount() {
 
-          }
+      // loop through all
+      // get sums for jurisdictions over all years
 
+        let bundle = {};
+        let caseCount = 0;
+
+        for ( let d in this.crunchedCapData ) {
+
+              for ( let jurisdiction in this.crunchedCapData[d] ) {
+
+                  if ( jurisdiction in bundle ) {
+                      bundle[jurisdiction] = bundle[jurisdiction] + this.crunchedCapData[d][jurisdiction];
+                  } else {
+                      bundle[jurisdiction] = this.crunchedCapData[d][jurisdiction];
+                  }
+
+              }
 
         }
 
+        this.maxCaseCount = d3.max( d3.values( bundle ) );
 
-        this.maxCaseCount = d3.max(d3.values(bundle));
-
-
-
-      }
-
-
-
-
-
-
-
-
-
-
-
-
-
+    }
 
     renderGeo(data) {
 
-      function scale (scaleFactor) {
-          return d3.geoTransform({
-              point: function(x, y) {
-                  this.stream.point(x * scaleFactor, y  * scaleFactor);
-              }
-          });
-      }
+        // helper function
+        // scales down the topojson paths we drawing
+        // for our us states
+        function scale( scaleFactor ) {
+            return d3.geoTransform({
+                point: function(x, y) {
+                    this.stream.point(x * scaleFactor, y  * scaleFactor);
+                }
+            });
+        }
 
-      function getRandomInt(min, max) {
-        min = Math.ceil(min);
-        max = Math.floor(max);
-        return Math.floor(Math.random() * (max - min)) + min;
-      }
-
-
-
-
-
-      var getCountsFromId =  (stateId, startYear, endYear) => {
+        var getCountsFromId =  (stateId, startYear, endYear) => {
         // a numeric, two digit stateid from toppjson enters
 
-        const jurisdictionAssociations = { "01":"ala", "02":"alaska",
-                  "04":"ariz", "05":"ark", "06":"cal",
-                  "08":"colo", "09":"conn", "10":"del", "12":"fla", "13":"ga",
-                  "15":"haw", "16":"idaho", '17':"ill", "18":"ind", "19":"iowa",
-                  "20":"kan", "21":"ky", "22":"la", "23":"me", "24":"md",
-                  "25":"mass", "26":"mich", '27':"minn", "28":"miss", "29":"mo",
-                  "30":"montchr", "31":"neb", "32":"nev", "33":"nh", "34":"nj",
-                  "35":"nm", "36":"ny", "37":"nc", "38":"nd", "39":"ohio",
-                  "40":"okla", "41":"or", "42":"pa", "44":"ri", "45":"sc", "46":"sd",
-                  "47":"tenn", "48":"tex", "49":"utah", "50":"vt", "51":"va",
-                  "53":"wash", "54":"w-va", "55":"wis", "56":"wyo"};
+            var bundle = {};
+            for ( let d in this.crunchedCapData ) {
+                let caseYear = parseInt(d, 10);
 
+                if (caseYear <= endYear) {
 
+                    for (let jurisdiction in this.crunchedCapData[d]) {
 
-
-
-                      var bundle = {};
-                      for ( let d in this.jj ) {
-
-                        let caseYear = parseInt(d, 10);
-
-                        if (caseYear >= startYear && caseYear <= endYear) {
-
-                          for (let jurisdiction in this.jj[d]) {
-
-                            if (jurisdiction in bundle) {
-                                bundle[jurisdiction] = bundle[jurisdiction] + this.jj[d][jurisdiction];
-                            } else {
-                              bundle[jurisdiction] = this.jj[d][jurisdiction];
-                            }
-
-                          }
-
-
+                        if (jurisdiction in bundle) {
+                            bundle[jurisdiction] = bundle[jurisdiction] + this.crunchedCapData[d][jurisdiction];
+                        } else {
+                          bundle[jurisdiction] = this.crunchedCapData[d][jurisdiction];
                         }
-                      }
-
-
-
-                    let count = bundle[jurisdictionAssociations[stateId]];
-
-
-                    if ( typeof count === 'undefined' ) {
-                      count = 1;
                     }
+                }
+            }
 
+            let count = bundle[jurisdictionAssociations[stateId]];
 
+            if ( typeof count === 'undefined' ) {
+              count = 1;
+            }
 
-                    return count;
-
-
-
+            return count;
       }
 
-
-
-
-
-
-      let path   = d3.geoPath()
-                 .projection(scale(.15));
+      let path = d3.geoPath()
+                   .projection(scale(.15));
 
       let color = d3.scaleLinear()
-         .domain([1, 14000])
-         .range(["white", "steelblue"]);
+                    .domain([1, this.maxCaseCount])
+                    .range(["white", "steelblue"]);
 
+      console.log(this.maxCaseCount)
       let row_position = 0;
       let column_position = 0;
       let x = 0;
       let y = 0;
 
+      for ( let range in ranges ) {
+
+          x = 100 + (300 * column_position);
+          y = 100 + (300 * row_position );
+
+          this.svg.append("g")
+              .attr("class", "states-choropleth")
+              .selectAll("path")
+              .data( topojson.feature( this.stateGeoData, this.stateGeoData.objects.states ).features )
+              .enter()
+              .append( "path" )
+
+              .attr( 'fill', function( d ) {
+                      // kludge: ignoring dc in the topojson since
+                      // we don't draw it in this vis
+                      if ( d.id == '11' ) {
+                        return
+                      }
+                      console.log(color(getCountsFromId(d.id, ranges[range].startYear, ranges[range].endYear)))
+                      return color(getCountsFromId(d.id, ranges[range].startYear, ranges[range].endYear))
+                  })
+
+              .attr('transform', 'translate(' + x + ',' + y + ')')
+              .attr("d", path);
 
 
-      for (let range in ranges) { // match our decade descriptions
-
-        x = 100 + (300 * column_position);
-        y = 100 + (300 * row_position );
-
-        this.svg.append("g")
-            .attr("class", "states-choropleth")
-            .selectAll("path")
-            .data(topojson.feature(data, data.objects.states).features)
-            .enter()
-            .append("path")
-            .attr("fill", function(d) {
-
-                // kludge: ignoring dc in the topojson since
-                // we don't draw it in this vis
-                if (d.id == "11") {
-                  return
-                }
+          this.svg.append("path")
+              .attr("class", "states")
+              .attr('transform', 'translate(' + 100 + (300 * column_position) + ',' + 100 + (300 * row_position )  + ')')
+              .attr('transform', 'translate(' + x + ',' + y + ')')
+              .attr("d", path(topojson.mesh(this.stateGeoData, this.stateGeoData.objects.states, function(a, b) { return a !== b; })));
 
 
-                console.log(ranges[range].start_year + ' ' + getCountsFromId(d.id, ranges[range].start_year, ranges[range].end_year));
-                return color(getCountsFromId(d.id, ranges[range].start_year, ranges[range].end_year))
+          column_position = column_position + 1;
 
-
-
-
-              })
-            .attr('transform', 'translate(' + x + ',' + y + ')')
-            .attr("d", path);
-
-
-        this.svg.append("path")
-            .attr("class", "states")
-            .attr('transform', 'translate(' + 100 + (300 * column_position) + ',' + 100 + (300 * row_position )  + ')')
-            .attr('transform', 'translate(' + x + ',' + y + ')')
-            .attr("d", path(topojson.mesh(data, data.objects.states, function(a, b) { return a !== b; })));
-
-
-        column_position = column_position + 1;
-
-        if (column_position === 6) {
-          column_position = 0;
-          row_position = row_position + 1;
-        }
-
-
+          if (column_position === 6) {
+            column_position = 0;
+            row_position = row_position + 1;
+          }
 
       }
-
 
      }
 }
