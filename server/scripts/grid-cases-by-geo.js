@@ -1,11 +1,13 @@
 'use strict';
 
-var d3 = Object.assign( require('d3'), require('d3-fetch'), require('d3-scale-chromatic'), require('d3-geo') );
+var d3 = Object.assign( require('d3'), require('d3-fetch'),
+                        require('d3-scale-chromatic'), require('d3-geo'),
+                        require('d3-format'));
+
 var topojson = require('topojson');
 require("babel-polyfill");
 
 import { ranges, jurisdictionAssociations } from './utility-geo.js';
-
 
 class CasesByGeo {
 
@@ -41,9 +43,8 @@ class CasesByGeo {
 
         // Load our data and store in this objects
         await this.loadData();
-
+        await this.getMaxCaseCount();
         this.renderTextDesc();
-        this.getMaxCaseCount();
         this.renderGeo();
 
     }
@@ -76,21 +77,22 @@ class CasesByGeo {
                 .classed('year-delta', true)
                 .attr('x', 150 + (300 * columnPosition) )
                 .attr('y', 250 + (300 * rowPosition ))
+                .style('font-size', '1.5em')
                 .text( ranges[range].startYear + ' to ' + ranges[range].endYear);
 
             this.svg
                 .append('text')
                 .classed('year-delta', true)
                 .attr('x', 150 + (300 * columnPosition) )
-                .attr('y', 250 + (300 * rowPosition ) +20)
-                .text( 'increase of ' + ranged_data.caseCount + ' cases');
+                .attr('y', 250 + (300 * rowPosition ) +23)
+                .text( d3.format(",")(ranged_data.caseCount) + ' new cases');
 
             this.svg
                 .append('text')
                 .classed('year-delta', true)
                 .attr('x', 150 + (300 * columnPosition) )
-                .attr('y', 250 + (300 * rowPosition ) + 40)
-                .text( caseCount + ' cases in total');
+                .attr('y', 250 + (300 * rowPosition ) + 46)
+                .text( d3.format(",")(caseCount) + ' cases in total');
 
             columnPosition = columnPosition + 1;
 
@@ -107,12 +109,12 @@ class CasesByGeo {
 
     getCounts(startYear, endYear ) {
 
-        var bundle = {};
-        var caseCount = 0;
+        let bundle = {};
+        let caseCount = 0;
 
         for ( let d in this.crunchedCapData ) {
 
-          var case_year = parseInt(d, 10);
+          let case_year = parseInt(d, 10);
 
           if (case_year >= startYear && case_year <= endYear) {
 
@@ -174,16 +176,16 @@ class CasesByGeo {
         // for our us states
         function scale( scaleFactor ) {
             return d3.geoTransform({
-                point: function(x, y) {
-                    this.stream.point(x * scaleFactor, y  * scaleFactor);
+                point: function( x, y ) {
+                    this.stream.point( x * scaleFactor, y  * scaleFactor );
                 }
             });
         }
 
-        var getCountsFromId =  (stateId, startYear, endYear) => {
+        const getCountsFromId =  (stateId, startYear, endYear) => {
         // a numeric, two digit stateid from toppjson enters
 
-            var bundle = {};
+            let bundle = {};
             for ( let d in this.crunchedCapData ) {
                 let caseYear = parseInt(d, 10);
 
